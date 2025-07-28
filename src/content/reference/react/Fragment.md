@@ -6,7 +6,7 @@ title: <Fragment> (<>...</>)
 
 `<Fragment>`, often used via `<>...</>` syntax, lets you group elements without a wrapper node. 
 
-<ExperimentalBadge /> Fragments can also accept refs, which enable interacting with underlying DOM nodes without adding wrapper elements.
+<Experimental> Fragments can also accept refs, which enable interacting with underlying DOM nodes without adding wrapper elements. See reference and usage below.</Experimental>
 
 ```js
 <>
@@ -27,43 +27,37 @@ title: <Fragment> (<>...</>)
 
 Wrap elements in `<Fragment>` to group them together in situations where you need a single element. Grouping elements in `Fragment` has no effect on the resulting DOM; it is the same as if the elements were not grouped. The empty JSX tag `<></>` is shorthand for `<Fragment></Fragment>` in most cases.
 
-<ExperimentalBadge /> Fragments can accept refs to provide access to the underlying DOM nodes they wrap, enabling interactions like event handling, intersection observation, and focus management without requiring additional wrapper elements.
+### <ExperimentalBadge /> FragmentInstance {/*fragmentinstance*/}
+
+When you pass a ref to a fragment, React provides a `FragmentInstance` object with methods for interacting with the DOM nodes wrapped by the fragment:
+
+**Event handling methods:**
+- `addEventListener(type, listener, options?)`: Adds an event listener to all first-level DOM children of the Fragment
+- `removeEventListener(type, listener, options?)`: Removes an event listener from all first-level DOM children of the Fragment  
+- `dispatchEvent(event)`: Dispatches an event to a virtual child of the Fragment to call any added listeners and bubble to the DOM parent.
+
+**Layout methods:**
+- `compareDocumentPosition(otherNode)`: Compares the document position of the Fragment with another node
+  - If the Fragment has children, the native `compareDocumentPosition` value is returned. 
+  - Empty Fragments will attempt to compare positioning within the React tree and include `NODE.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC`
+  - Elements that have a different relationship in the React tree and DOM tree due to portaling or other insertions are `NODE.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC`
+- `getClientRects()`: Returns a flat array of `ClientRect` objects representing the bounding rectangles of all DOM nodes
+- `getRootNode()`: Returns the root node containing the Fragment's DOM nodes
+
+**Focus management methods:**
+- `focus(options?)`: Focuses the first focusable DOM node in the Fragment
+- `focusLast(options?)`: Focuses the last focusable DOM node in the Fragment
+- `blur()`: Removes focus if `document.activeElement` is within the Fragment
+
+**Observer methods:**
+- `observeUsing(observer)`: Starts observing the Fragment's DOM children with an IntersectionObserver or ResizeObserver
+- `unobserveUsing(observer)`: Stops observing the Fragment's DOM children with the specified observer
+
 
 #### Props {/*props*/}
 
 - **optional** `key`: Fragments declared with the explicit `<Fragment>` syntax may have [keys.](/learn/rendering-lists#keeping-list-items-in-order-with-key)
 - <ExperimentalBadge />  **optional** `ref`: A ref object or callback function. React will forward the ref to a `FragmentInstance` object that provides methods for interacting with the DOM nodes wrapped by the Fragment.
-
-<Experimental>
-#### FragmentInstance {/*fragmentinstance*/}
-
-When you pass a ref to a fragment, React provides a `FragmentInstance` object with methods for interacting with the DOM nodes wrapped by the fragment:
-
-**Event handling methods:**
-- `addEventListener(type, listener, options?)`: Adds an event listener to all first-level DOM children of the fragment
-- `removeEventListener(type, listener, options?)`: Removes an event listener from all first-level DOM children of the fragment  
-- `dispatchEvent(event)`: Dispatches an event to a virtual child of the Fragment to call any added listeners and bubble to the DOM parent.
-
-**Layout methods:**
-- `compareDocumentPosition(otherNode)`: Compares the document position of the fragment with another node
-  - An element preceding a fragment is `Node.DOCUMENT_POSITION_PRECEDING`
-  - An element following a fragment is `Node.DOCUMENT_POSITION_FOLLOWING`
-  - An element containing the fragment is `Node.DOCUMENT_POSITION_PRECEDING` and `Node.DOCUMENT_POSITION_CONTAINING`
-  - An element within the fragment is `NODE.DOCUMENT_POSITION_CONTAINED_BY`
-  - Empty Fragments will attempt to compare positioning within the React tree and include `NODE.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC`
-  - Elements that have a different relationship in the React tree and DOM tree due to portaling or other insertions are `NODE.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC`
-- `getClientRects()`: Returns a flat array of `ClientRect` objects representing the bounding rectangles of all DOM nodes
-- `getRootNode()`: Returns the root node containing the fragment's DOM nodes
-
-**Focus management methods:**
-- `focus(options?)`: Focuses the first focusable DOM node in the Fragment
-- `focusLast(options?)`: Focuses the last focusable DOM node in the Fragment
-- `blur()`: Removes focus from all DOM nodes in the Fragment
-
-**Observer methods:**
-- `observeUsing(observer)`: Starts observing the fragment's DOM children with an IntersectionObserver or ResizeObserver
-- `unobserveUsing(observer)`: Stops observing the fragment's DOM children with the specified observer
-</Experimental>
 
 #### Caveats {/*caveats*/}
 
@@ -247,10 +241,9 @@ function PostBody({ body }) {
 
 </Sandpack>
 
-<Experimental>
 ---
 
-### Using Fragment refs for DOM interaction {/*using-fragment-refs-for-dom-interaction*/}
+### <ExperimentalBadge /> Using Fragment refs for DOM interaction {/*using-fragment-refs-for-dom-interaction*/}
 
 Fragment refs allow you to interact with the DOM nodes wrapped by a Fragment without adding extra wrapper elements. This is useful for event handling, visibility tracking, focus management, and replacing deprecated patterns like `ReactDOM.findDOMNode()`.
 
@@ -278,7 +271,7 @@ function ClickableWrapper({ children, onClick }) {
 ```
 ---
 
-### Tracking visibility with Fragment refs {/*tracking-visibility-with-fragment-refs*/}
+### <ExperimentalBadge /> Tracking visibility with Fragment refs {/*tracking-visibility-with-fragment-refs*/}
 
 Fragment refs are particularly useful for visibility tracking and intersection observation. This enables you to monitor when content becomes visible without requiring the child components to expose refs:
 
@@ -291,7 +284,7 @@ function VisibilityObserver({ threshold = 0.5, onVisibilityChange, children }) {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        onVisibilityChange(entries[0].isIntersecting);
+        onVisibilityChange(entries.some(entry => entry.isIntersecting))
       },
       { threshold }
     );
@@ -325,27 +318,22 @@ This pattern replaces effect-based visibility logging, which can be unreliable d
 
 ---
 
-### Focus management with Fragment refs {/*focus-management-with-fragment-refs*/}
+### <ExperimentalBadge /> Focus management with Fragment refs {/*focus-management-with-fragment-refs*/}
 
 Fragment refs provide focus management methods that work across all DOM nodes within the Fragment:
 
 ```js
 import { Fragment, useRef } from 'react';
 
-function FocusableGroup({ children }) {
+function Focus({ children }) {
   const fragmentRef = useRef(null);
 
   return (
-    <>
-      <button onClick={() => {fragmentRef.current.focus()}}>Focus</button>
-      <Fragment ref={fragmentRef}>
-        {children}
-      </Fragment>
-    </>
+    <Fragment ref={(fragmentInstance) => fragmentInstance?.focus()}>
+      {children}
+    </Fragment>
   );
 }
 ```
 
 The `focus()` method focuses the first focusable element within the Fragment, while `focusLast()` focuses the last focusable element.
-
-</Experimental>
